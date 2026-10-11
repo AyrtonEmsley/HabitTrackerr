@@ -1,0 +1,17 @@
+---
+description: Weekly goals tracker conventions
+alwaysApply: true
+---
+Project: weekly goals tracker (MyFitnessPal-style, but for weekly targets).
+Stack: Next.js App Router, TypeScript (strict), plain CSS in app/globals.css. Mobile-first UI.
+
+Core rules:
+- Goal progress is DERIVED from logs, never stored. Planned sessions are
+  reminders only and do not affect completion.
+- Dates are "YYYY-MM-DD" strings. Weeks run Monday to Sunday (dayOfWeek 0 = Monday).
+  No time-based date maths with timezones.
+- All storage goes through lib/storage.ts so localStorage can be swapped for
+  Supabase later.
+- Pure logic lives in lib/week.ts and must have Vitest tests (lib/week.test.ts).
+- Small components, no new dependencies without asking.
+- Tap targets >= 44px, design for 390px width first.
