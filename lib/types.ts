@@ -5,7 +5,10 @@ export type Goal = {
   id: string
   name: string
   emoji?: string
+  /** Sessions per week. 0 means no session target (time-only goal). */
   targetPerWeek: number
+  /** Optional total time target for the week, in minutes. Set either target or both; with both, the goal needs sessions AND minutes. */
+  targetMinutesPerWeek?: number
 }
 
 export type PlannedSession = {
@@ -13,6 +16,7 @@ export type PlannedSession = {
   goalId: string
   dayOfWeek: DayIndex
   time?: string // "19:00"
+  durationMinutes?: number // planned length; copied onto the log when you tick it
 }
 
 export type Log = {
@@ -20,6 +24,7 @@ export type Log = {
   goalId: string
   date: string // "2026-10-12" (ISO date, no time zones)
   plannedSessionId?: string
+  minutes?: number
   note?: string
 }
 
@@ -30,7 +35,13 @@ export type AppData = {
 }
 
 export type WeekRange = { start: string; end: string }
-export type Progress = { done: number; target: number; complete: boolean }
+export type Progress = {
+  done: number
+  target: number
+  minutesDone: number
+  minutesTarget?: number
+  complete: boolean
+}
 export type DayView = {
   planned: { session: PlannedSession; log: Log | null }[]
   extra: Log[]

@@ -7,6 +7,25 @@ import { DAY_NAMES, weekdayIndex } from '@/lib/week'
 
 const EMOJIS = ['🥊', '🏋️', '🏃', '🚴', '🏊', '🧘', '⚽', '🥾', '🤸', '💪', '🎾', '🧗']
 
+/** "60" -> 60, "" or "0" -> undefined */
+function parseMinutes(s: string): number | undefined {
+  const n = Math.round(Number(s))
+  return Number.isFinite(n) && n > 0 ? n : undefined
+}
+
+function MinutesInput({ id, value, onChange, placeholder }: { id: string; value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <input
+      className="input"
+      id={id}
+      inputMode="numeric"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 4))}
+    />
+  )
+}
+
 function Sheet({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   return (
     <div
@@ -27,15 +46,22 @@ export function GoalSheet({ data, goalId, actions, onClose }: { data: AppData; g
   const [name, setName] = useState(goal?.name ?? '')
   const [emoji, setEmoji] = useState(goal?.emoji ?? '🎯')
   const [target, setTarget] = useState(goal?.targetPerWeek ?? 3)
+  const [minutes, setMinutes] = useState(goal?.targetMinutesPerWeek ? String(goal.targetMinutesPerWeek) : '')
   const [error, setError] = useState(false)
+  const [needsTarget, setNeedsTarget] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const save = () => {
+    setNeedsTarget(false)
     if (!name.trim()) {
       setError(true)
       return
     }
-    actions.saveGoal({ id: goal?.id, name, emoji, targetPerWeek: target })
+    if (target === 0 && !parseMinutes(minutes)) {
+      setNeedsTarget(true)
+      return
+    }
+    actions.saveGoal({ id: goal?.id, name, emoji, targetPerWeek: target, targetMinutesPerWeek: parseMinutes(minutes) })
     onClose()
   }
 
@@ -69,16 +95,25 @@ export function GoalSheet({ data, goalId, actions, onClose }: { data: AppData; g
           </button>
         ))}
       </div>
-      <label className="f">Times per week</label>
+      <label className="f">Sessions per week (0 = no session target)</label>
       <div className="stepper">
-        <button className="icon-btn" onClick={() => setTarget((t) => Math.max(1, t - 1))} aria-label="Fewer">
+        <button className="icon-btn" onClick={() => setTarget((t) => Math.max(0, t - 1))} aria-label="Fewer">
           −
         </button>
-        <span className="val">{target}</span>
+        <span className="val">{target === 0 ? 'None' : target}</span>
         <button className="icon-btn" onClick={() => setTarget((t) => Math.min(14, t + 1))} aria-label="More">
           +
         </button>
       </div>
+      <label className="f" htmlFor="g-minutes">
+        Total time per week, in minutes (optional)
+      </label>
+      <MinutesInput id="g-minutes" value={minutes} onChange={setMinutes} placeholder="e.g. 180" />
+      <p className="hint" style={needsTarget ? { color: 'var(--danger)' } : undefined}>
+        {needsTarget
+          ? 'Set a number of sessions, a time, or both.'
+          : 'Set sessions, time, or both. With both, the goal ticks once you hit both.'}
+      </p>
       <div className="sheet-actions">
         <button className="btn block" onClick={save}>
           Save goal
@@ -108,6 +143,7 @@ export function SlotSheet({ data, selected, actions, onClose }: { data: AppData;
   const [goalId, setGoalId] = useState(data.goals[0]?.id ?? '')
   const [day, setDay] = useState<DayIndex>(weekdayIndex(selected))
   const [time, setTime] = useState('19:00')
+  const [duration, setDuration] = useState('60')
 
   return (
     <Sheet onClose={onClose}>
@@ -133,15 +169,20 @@ export function SlotSheet({ data, selected, actions, onClose }: { data: AppData;
         ))}
       </select>
       <label className="f" htmlFor="s-time">
-        Time (optional)
+        Start time (optional)
       </label>
       <input className="input" id="s-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+      <label className="f" htmlFor="s-duration">
+        Length, in minutes (optional)
+      </label>
+      <MinutesInput id="s-duration" value={duration} onChange={setDuration} placeholder="e.g. 60" />
+      <p className="hint">Ticking this session logs this many minutes towards the goal's time target.</p>
       <div className="sheet-actions">
         <button
           className="btn block"
           disabled={!goalId}
           onClick={() => {
-            actions.addSession({ goalId, dayOfWeek: day, time })
+            actions.addSession({ goalId, dayOfWeek: day, time, durationMinutes: parseMinutes(duration) })
             onClose()
           }}
         >
@@ -156,16 +197,23 @@ export function SlotSheet({ data, selected, actions, onClose }: { data: AppData;
 }
 
 export function LogSheet({ data, selected, actions, onClose }: { data: AppData; selected: string; actions: Actions; onClose: () => void }) {
+  const [minutes, setMinutes] = useState('60')
+
   return (
     <Sheet onClose={onClose}>
       <h2>Log for {DAY_NAMES[weekdayIndex(selected)]}</h2>
+      <label className="f" htmlFor="l-minutes">
+        How long, in minutes (optional)
+      </label>
+      <MinutesInput id="l-minutes" value={minutes} onChange={setMinutes} placeholder="e.g. 60" />
+      <label className="f">What did you do?</label>
       <div className="stack">
         {data.goals.map((g) => (
           <button
             key={g.id}
             className="pick"
             onClick={() => {
-              actions.addLog(g.id, selected)
+              actions.addLog(g.id, selected, parseMinutes(minutes))
               onClose()
             }}
           >

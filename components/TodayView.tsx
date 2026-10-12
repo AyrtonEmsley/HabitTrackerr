@@ -9,6 +9,7 @@ import {
   addDays,
   fmtShort,
   fmtTime,
+  fmtMinutes,
   getDayView,
   getProgress,
   getWeekDates,
@@ -107,6 +108,9 @@ export default function TodayView({ data, selected, onSelect, actions, onAddGoal
       <div className="goals">
         {data.goals.map((g) => {
           const p = getProgress(g, data.logs, week)
+          const isTimeOnly = g.targetPerWeek === 0 && p.minutesTarget !== undefined
+          const minutesLeft = Math.max(0, (p.minutesTarget ?? 0) - p.minutesDone)
+          const filledTimeSegments = Math.min(10, Math.floor((p.minutesDone / (p.minutesTarget ?? 1)) * 10))
           return (
             <div key={g.id} className={`goal ${p.complete ? 'complete' : ''} ${justCompleted === g.id ? 'just' : ''}`}>
               <div className="goal-head">
@@ -118,15 +122,25 @@ export default function TodayView({ data, selected, onSelect, actions, onAddGoal
                   </div>
                 )}
                 <div className="goal-count">
-                  {Math.min(p.done, p.target)}/{p.target}
+                  {isTimeOnly ? `${fmtMinutes(minutesLeft)} left` : `${Math.min(p.done, p.target)}/${p.target}`}
                 </div>
               </div>
-              <div className="segs" role="img" aria-label={`${p.done} of ${p.target} done`}>
-                {Array.from({ length: g.targetPerWeek }, (_, i) => (
-                  <div key={i} className={`seg ${i < p.done ? 'on' : ''}`} />
+              <div
+                className="segs"
+                role="img"
+                aria-label={isTimeOnly ? `${fmtMinutes(p.minutesDone)} of ${fmtMinutes(p.minutesTarget ?? 0)} completed` : `${p.done} of ${p.target} done`}
+              >
+                {Array.from({ length: isTimeOnly ? 10 : g.targetPerWeek }, (_, i) => (
+                  <div key={i} className={`seg ${i < (isTimeOnly ? filledTimeSegments : p.done) ? 'on' : ''}`} />
                 ))}
               </div>
-              {p.done > p.target && <div className="bonus">+{p.done - p.target} extra this week</div>}
+              {isTimeOnly ? (
+                p.minutesDone > (p.minutesTarget ?? 0) && (
+                  <div className="bonus">+{fmtMinutes(p.minutesDone - (p.minutesTarget ?? 0))} extra this week</div>
+                )
+              ) : (
+                p.done > p.target && <div className="bonus">+{p.done - p.target} extra this week</div>
+              )}
             </div>
           )
         })}

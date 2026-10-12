@@ -15,3 +15,8 @@ Core rules:
 - Pure logic lives in lib/week.ts and must have Vitest tests (lib/week.test.ts).
 - Small components, no new dependencies without asking.
 - Tap targets >= 44px, design for 390px width first.
+
+
+want to add goals with minutes/hours goals instead of sessions
+notifiications of schedueled tasks - apple notifs - decide how many times and how long before session - look into google maps time to see if going to make it 
+

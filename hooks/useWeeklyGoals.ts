@@ -19,18 +19,22 @@ export function useWeeklyGoals() {
     if (ready) saveData(data)
   }, [data, ready])
 
-  const saveGoal = useCallback((input: { id?: string; name: string; emoji: string; targetPerWeek: number }) => {
-    const name = input.name.trim()
-    const emoji = input.emoji.trim() || '🎯'
-    setData((d) =>
-      input.id
-        ? {
-            ...d,
-            goals: d.goals.map((g) => (g.id === input.id ? { ...g, name, emoji, targetPerWeek: input.targetPerWeek } : g)),
-          }
-        : { ...d, goals: [...d.goals, { id: uid(), name, emoji, targetPerWeek: input.targetPerWeek }] },
-    )
-  }, [])
+  const saveGoal = useCallback(
+    (input: { id?: string; name: string; emoji: string; targetPerWeek: number; targetMinutesPerWeek?: number }) => {
+      const name = input.name.trim()
+      const emoji = input.emoji.trim() || '🎯'
+      const { targetPerWeek, targetMinutesPerWeek } = input
+      setData((d) =>
+        input.id
+          ? {
+              ...d,
+              goals: d.goals.map((g) => (g.id === input.id ? { ...g, name, emoji, targetPerWeek, targetMinutesPerWeek } : g)),
+            }
+          : { ...d, goals: [...d.goals, { id: uid(), name, emoji, targetPerWeek, targetMinutesPerWeek }] },
+      )
+    },
+    [],
+  )
 
   const deleteGoal = useCallback((id: string) => {
     setData((d) => ({
@@ -40,10 +44,13 @@ export function useWeeklyGoals() {
     }))
   }, [])
 
-  const addSession = useCallback((input: { goalId: string; dayOfWeek: DayIndex; time?: string }) => {
+  const addSession = useCallback((input: { goalId: string; dayOfWeek: DayIndex; time?: string; durationMinutes?: number }) => {
     setData((d) => ({
       ...d,
-      sessions: [...d.sessions, { id: uid(), goalId: input.goalId, dayOfWeek: input.dayOfWeek, time: input.time || undefined }],
+      sessions: [
+        ...d.sessions,
+        { id: uid(), goalId: input.goalId, dayOfWeek: input.dayOfWeek, time: input.time || undefined, durationMinutes: input.durationMinutes },
+      ],
     }))
   }, [])
 
@@ -56,7 +63,7 @@ export function useWeeklyGoals() {
     }))
   }, [])
 
-  /** Tap a planned session: log it, or undo the log if it's already logged that day. */
+  /** Tap a planned session: log it (with its planned minutes), or undo the log if already logged that day. */
   const toggleSession = useCallback((sessionId: string, date: string) => {
     setData((d) => {
       const session = d.sessions.find((s) => s.id === sessionId)
@@ -64,12 +71,18 @@ export function useWeeklyGoals() {
       const existing = d.logs.find((l) => l.plannedSessionId === sessionId && l.date === date)
       return existing
         ? { ...d, logs: d.logs.filter((l) => l.id !== existing.id) }
-        : { ...d, logs: [...d.logs, { id: uid(), goalId: session.goalId, date, plannedSessionId: sessionId }] }
+        : {
+            ...d,
+            logs: [
+              ...d.logs,
+              { id: uid(), goalId: session.goalId, date, plannedSessionId: sessionId, minutes: session.durationMinutes },
+            ],
+          }
     })
   }, [])
 
-  const addLog = useCallback((goalId: string, date: string) => {
-    setData((d) => ({ ...d, logs: [...d.logs, { id: uid(), goalId, date }] }))
+  const addLog = useCallback((goalId: string, date: string, minutes?: number) => {
+    setData((d) => ({ ...d, logs: [...d.logs, { id: uid(), goalId, date, minutes }] }))
   }, [])
 
   const removeLog = useCallback((id: string) => {
@@ -79,20 +92,20 @@ export function useWeeklyGoals() {
   const loadExample = useCallback(() => {
     const mon = getWeekRange(todayStr()).start
     const day = (i: number) => addDays(mon, i)
-    const kb: Goal = { id: uid(), name: 'Kickboxing', emoji: '🥊', targetPerWeek: 3 }
-    const gym: Goal = { id: uid(), name: 'Gym', emoji: '🏋️', targetPerWeek: 3 }
+    const kb: Goal = { id: uid(), name: 'Kickboxing', emoji: '🥊', targetPerWeek: 3, targetMinutesPerWeek: 180 }
+    const gym: Goal = { id: uid(), name: 'Gym', emoji: '🏋️', targetPerWeek: 3, targetMinutesPerWeek: 150 }
     const planned: DayIndex[] = [0, 2, 3, 4]
-    const sessions = planned.map((dayOfWeek) => ({ id: uid(), goalId: kb.id, dayOfWeek, time: '19:00' }))
+    const sessions = planned.map((dayOfWeek) => ({ id: uid(), goalId: kb.id, dayOfWeek, time: '19:00', durationMinutes: 60 }))
     setData({
       goals: [kb, gym],
       sessions,
       logs: [
-        { id: uid(), goalId: kb.id, date: day(0), plannedSessionId: sessions[0].id },
-        { id: uid(), goalId: gym.id, date: day(1) },
-        { id: uid(), goalId: gym.id, date: day(2) },
-        { id: uid(), goalId: kb.id, date: day(3), plannedSessionId: sessions[2].id },
-        { id: uid(), goalId: kb.id, date: day(4), plannedSessionId: sessions[3].id },
-        { id: uid(), goalId: gym.id, date: day(5) },
+        { id: uid(), goalId: kb.id, date: day(0), plannedSessionId: sessions[0].id, minutes: 60 },
+        { id: uid(), goalId: gym.id, date: day(1), minutes: 60 },
+        { id: uid(), goalId: gym.id, date: day(2), minutes: 45 },
+        { id: uid(), goalId: kb.id, date: day(3), plannedSessionId: sessions[2].id, minutes: 60 },
+        { id: uid(), goalId: kb.id, date: day(4), plannedSessionId: sessions[3].id, minutes: 60 },
+        { id: uid(), goalId: gym.id, date: day(5), minutes: 60 },
       ],
     })
   }, [])

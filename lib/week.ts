@@ -39,10 +39,22 @@ export function getWeekDates(date: string): string[] {
   return Array.from({ length: 7 }, (_, i) => addDays(start, i))
 }
 
-/** Progress is derived from logs only. Planned sessions never count. */
+/**
+ * Progress is derived from logs only. Planned sessions never count.
+ * Targets can be sessions, minutes, or both. With both, the goal needs sessions AND minutes.
+ * A goal with no targets is never complete.
+ */
 export function getProgress(goal: Goal, logs: Log[], week: WeekRange): Progress {
-  const done = logs.filter((l) => l.goalId === goal.id && l.date >= week.start && l.date <= week.end).length
-  return { done, target: goal.targetPerWeek, complete: done >= goal.targetPerWeek }
+  const inWeek = logs.filter((l) => l.goalId === goal.id && l.date >= week.start && l.date <= week.end)
+  const done = inWeek.length
+  const minutesDone = inWeek.reduce((sum, l) => sum + (l.minutes ?? 0), 0)
+  const minutesTarget = goal.targetMinutesPerWeek
+  const hasSessionTarget = goal.targetPerWeek > 0
+  const complete =
+    (hasSessionTarget || minutesTarget !== undefined) &&
+    (!hasSessionTarget || done >= goal.targetPerWeek) &&
+    (minutesTarget === undefined || minutesDone >= minutesTarget)
+  return { done, target: goal.targetPerWeek, minutesDone, minutesTarget, complete }
 }
 
 /** Planned sessions for that weekday (with their log, if any) plus logs that weren't tied to a plan. */
@@ -69,4 +81,12 @@ export function fmtTime(t?: string): string {
   if (!t) return ''
   const [h, m] = t.split(':').map(Number)
   return `${h % 12 || 12}:${pad(m)}${h >= 12 ? 'pm' : 'am'}`
+}
+
+/** 45 -> "45m", 90 -> "1h 30m", 120 -> "2h" */
+export function fmtMinutes(total: number): string {
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  if (h === 0) return `${m}m`
+  return m === 0 ? `${h}h` : `${h}h ${m}m`
 }
