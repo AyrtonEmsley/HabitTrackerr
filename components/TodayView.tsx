@@ -193,7 +193,7 @@ export default function TodayView({ data, selected, onSelect, actions, onAddGoal
                 </span>
                 <span className="row-main">
                   <div className="row-name">
-                    {g.emoji} {g.name}
+                    {g.emoji} {g.name}{session.sessionType ? ` · ${session.sessionType}` : ''}
                   </div>
                   <div className="row-sub">
                     {log ? 'Done' : 'Planned'}
@@ -220,7 +220,7 @@ export default function TodayView({ data, selected, onSelect, actions, onAddGoal
                   </span>
                   <span className="row-main">
                     <div className="row-name">
-                      {g.emoji} {g.name}
+                      {g.emoji} {g.name}{l.sessionType ? ` · ${l.sessionType}` : ''}
                     </div>
                     <div className="row-sub">Done</div>
                   </span>

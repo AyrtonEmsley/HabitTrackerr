@@ -55,7 +55,7 @@ export default function ScheduleView({ data, actions, onAddGoal, onAddSession }:
                   <div key={s.id} className="row">
                     <span className="goal-emoji">{g.emoji ?? '🎯'}</span>
                     <span className="row-main">
-                      <div className="row-name">{g.name}</div>
+                      <div className="row-name">{g.name}{s.sessionType ? ` · ${s.sessionType}` : ''}</div>
                       <div className="row-sub">{s.time ? fmtTime(s.time) : 'Any time'}</div>
                     </span>
                     <button className="x" onClick={() => actions.deleteSession(s.id)} aria-label={`Remove ${g.name} on ${dayName}`}>

@@ -20,17 +20,17 @@ export function useWeeklyGoals() {
   }, [data, ready])
 
   const saveGoal = useCallback(
-    (input: { id?: string; name: string; emoji: string; targetPerWeek: number; targetMinutesPerWeek?: number }) => {
+    (input: { id?: string; name: string; emoji: string; targetPerWeek: number; targetMinutesPerWeek?: number; sessionTypes?: string[] }) => {
       const name = input.name.trim()
       const emoji = input.emoji.trim() || '🎯'
-      const { targetPerWeek, targetMinutesPerWeek } = input
+      const { targetPerWeek, targetMinutesPerWeek, sessionTypes } = input
       setData((d) =>
         input.id
           ? {
               ...d,
-              goals: d.goals.map((g) => (g.id === input.id ? { ...g, name, emoji, targetPerWeek, targetMinutesPerWeek } : g)),
+              goals: d.goals.map((g) => (g.id === input.id ? { ...g, name, emoji, targetPerWeek, targetMinutesPerWeek, sessionTypes } : g)),
             }
-          : { ...d, goals: [...d.goals, { id: uid(), name, emoji, targetPerWeek, targetMinutesPerWeek }] },
+          : { ...d, goals: [...d.goals, { id: uid(), name, emoji, targetPerWeek, targetMinutesPerWeek, sessionTypes }] },
       )
     },
     [],
@@ -44,12 +44,12 @@ export function useWeeklyGoals() {
     }))
   }, [])
 
-  const addSession = useCallback((input: { goalId: string; dayOfWeek: DayIndex; time?: string; durationMinutes?: number }) => {
+  const addSession = useCallback((input: { goalId: string; dayOfWeek: DayIndex; time?: string; durationMinutes?: number; sessionType?: string }) => {
     setData((d) => ({
       ...d,
       sessions: [
         ...d.sessions,
-        { id: uid(), goalId: input.goalId, dayOfWeek: input.dayOfWeek, time: input.time || undefined, durationMinutes: input.durationMinutes },
+        { id: uid(), goalId: input.goalId, dayOfWeek: input.dayOfWeek, time: input.time || undefined, durationMinutes: input.durationMinutes, sessionType: input.sessionType },
       ],
     }))
   }, [])
@@ -75,14 +75,14 @@ export function useWeeklyGoals() {
             ...d,
             logs: [
               ...d.logs,
-              { id: uid(), goalId: session.goalId, date, plannedSessionId: sessionId, minutes: session.durationMinutes },
+              { id: uid(), goalId: session.goalId, date, plannedSessionId: sessionId, minutes: session.durationMinutes, sessionType: session.sessionType },
             ],
           }
     })
   }, [])
 
-  const addLog = useCallback((goalId: string, date: string, minutes?: number) => {
-    setData((d) => ({ ...d, logs: [...d.logs, { id: uid(), goalId, date, minutes }] }))
+  const addLog = useCallback((goalId: string, date: string, minutes?: number, sessionType?: string) => {
+    setData((d) => ({ ...d, logs: [...d.logs, { id: uid(), goalId, date, minutes, sessionType }] }))
   }, [])
 
   const removeLog = useCallback((id: string) => {

@@ -47,6 +47,7 @@ export function GoalSheet({ data, goalId, actions, onClose }: { data: AppData; g
   const [emoji, setEmoji] = useState(goal?.emoji ?? '🎯')
   const [target, setTarget] = useState(goal?.targetPerWeek ?? 3)
   const [minutes, setMinutes] = useState(goal?.targetMinutesPerWeek ? String(goal.targetMinutesPerWeek) : '')
+  const [sessionTypes, setSessionTypes] = useState(goal?.sessionTypes?.join(', ') ?? '')
   const [error, setError] = useState(false)
   const [needsTarget, setNeedsTarget] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -61,7 +62,8 @@ export function GoalSheet({ data, goalId, actions, onClose }: { data: AppData; g
       setNeedsTarget(true)
       return
     }
-    actions.saveGoal({ id: goal?.id, name, emoji, targetPerWeek: target, targetMinutesPerWeek: parseMinutes(minutes) })
+    const types = Array.from(new Set(sessionTypes.split(',').map((type) => type.trim()).filter(Boolean))).slice(0, 12)
+    actions.saveGoal({ id: goal?.id, name, emoji, targetPerWeek: target, targetMinutesPerWeek: parseMinutes(minutes), sessionTypes: types.length ? types : undefined })
     onClose()
   }
 
@@ -114,6 +116,9 @@ export function GoalSheet({ data, goalId, actions, onClose }: { data: AppData; g
           ? 'Set a number of sessions, a time, or both.'
           : 'Set sessions, time, or both. With both, the goal ticks once you hit both.'}
       </p>
+      <label className="f" htmlFor="g-types">Session types (optional)</label>
+      <input className="input" id="g-types" maxLength={160} placeholder="e.g. Upper, Lower" value={sessionTypes} onChange={(e) => setSessionTypes(e.target.value)} />
+      <p className="hint">Separate types with commas. Logging any type counts toward this goal&apos;s weekly total.</p>
       <div className="sheet-actions">
         <button className="btn block" onClick={save}>
           Save goal
@@ -144,6 +149,8 @@ export function SlotSheet({ data, selected, actions, onClose }: { data: AppData;
   const [day, setDay] = useState<DayIndex>(weekdayIndex(selected))
   const [time, setTime] = useState('19:00')
   const [duration, setDuration] = useState('60')
+  const [sessionType, setSessionType] = useState('')
+  const goal = data.goals.find((g) => g.id === goalId)
 
   return (
     <Sheet onClose={onClose}>
@@ -151,13 +158,22 @@ export function SlotSheet({ data, selected, actions, onClose }: { data: AppData;
       <label className="f" htmlFor="s-goal">
         Goal
       </label>
-      <select className="input" id="s-goal" value={goalId} onChange={(e) => setGoalId(e.target.value)}>
+      <select className="input" id="s-goal" value={goalId} onChange={(e) => { setGoalId(e.target.value); setSessionType('') }}>
         {data.goals.map((g) => (
           <option key={g.id} value={g.id}>
             {g.emoji} {g.name}
           </option>
         ))}
       </select>
+      {goal?.sessionTypes?.length ? (
+        <>
+          <label className="f" htmlFor="s-type">Session type</label>
+          <select className="input" id="s-type" value={sessionType} onChange={(e) => setSessionType(e.target.value)}>
+            <option value="">No type</option>
+            {goal.sessionTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+          </select>
+        </>
+      ) : null}
       <label className="f" htmlFor="s-day">
         Day
       </label>
@@ -182,7 +198,7 @@ export function SlotSheet({ data, selected, actions, onClose }: { data: AppData;
           className="btn block"
           disabled={!goalId}
           onClick={() => {
-            actions.addSession({ goalId, dayOfWeek: day, time, durationMinutes: parseMinutes(duration) })
+            actions.addSession({ goalId, dayOfWeek: day, time, durationMinutes: parseMinutes(duration), sessionType: sessionType || undefined })
             onClose()
           }}
         >
@@ -198,6 +214,9 @@ export function SlotSheet({ data, selected, actions, onClose }: { data: AppData;
 
 export function LogSheet({ data, selected, actions, onClose }: { data: AppData; selected: string; actions: Actions; onClose: () => void }) {
   const [minutes, setMinutes] = useState('60')
+  const [goalId, setGoalId] = useState(data.goals[0]?.id ?? '')
+  const [sessionType, setSessionType] = useState('')
+  const goal = data.goals.find((g) => g.id === goalId)
 
   return (
     <Sheet onClose={onClose}>
@@ -206,23 +225,23 @@ export function LogSheet({ data, selected, actions, onClose }: { data: AppData; 
         How long, in minutes (optional)
       </label>
       <MinutesInput id="l-minutes" value={minutes} onChange={setMinutes} placeholder="e.g. 60" />
-      <label className="f">What did you do?</label>
-      <div className="stack">
-        {data.goals.map((g) => (
-          <button
-            key={g.id}
-            className="pick"
-            onClick={() => {
-              actions.addLog(g.id, selected, parseMinutes(minutes))
-              onClose()
-            }}
-          >
-            <span className="goal-emoji">{g.emoji ?? '🎯'}</span>
-            {g.name}
-          </button>
-        ))}
-      </div>
+      <label className="f" htmlFor="l-goal">Goal</label>
+      <select className="input" id="l-goal" value={goalId} onChange={(e) => { setGoalId(e.target.value); setSessionType('') }}>
+        {data.goals.map((g) => <option key={g.id} value={g.id}>{g.emoji} {g.name}</option>)}
+      </select>
+      {goal?.sessionTypes?.length ? (
+        <>
+          <label className="f" htmlFor="l-type">Session type</label>
+          <select className="input" id="l-type" value={sessionType} onChange={(e) => setSessionType(e.target.value)}>
+            <option value="">No type</option>
+            {goal.sessionTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+          </select>
+        </>
+      ) : null}
       <div className="sheet-actions">
+        <button className="btn block" disabled={!goalId} onClick={() => { actions.addLog(goalId, selected, parseMinutes(minutes), sessionType || undefined); onClose() }}>
+          Log session
+        </button>
         <button className="btn ghost block" onClick={onClose}>
           Cancel
         </button>

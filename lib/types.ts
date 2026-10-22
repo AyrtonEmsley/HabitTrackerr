@@ -9,6 +9,8 @@ export type Goal = {
   targetPerWeek: number
   /** Optional total time target for the week, in minutes. Set either target or both; with both, the goal needs sessions AND minutes. */
   targetMinutesPerWeek?: number
+  /** Optional named subdivisions, for example "Upper" and "Lower" for a gym goal. */
+  sessionTypes?: string[]
 }
 
 export type PlannedSession = {
@@ -17,6 +19,8 @@ export type PlannedSession = {
   dayOfWeek: DayIndex
   time?: string // "19:00"
   durationMinutes?: number // planned length; copied onto the log when you tick it
+  /** The goal subdivision planned for this session. */
+  sessionType?: string
 }
 
 export type Log = {
@@ -26,6 +30,8 @@ export type Log = {
   plannedSessionId?: string
   minutes?: number
   note?: string
+  /** The goal subdivision completed in this log. */
+  sessionType?: string
 }
 
 export type AppData = {

@@ -48,16 +48,16 @@ describe('getProgress: the kickboxing and gym week', () => {
     log('gym', '2026-10-10'),
   ]
   it('ticks kickboxing at 3/3 even though 4 were planned', () => {
-    expect(getProgress(kickboxing, logs, week)).toEqual({ done: 3, target: 3, complete: true })
+    expect(getProgress(kickboxing, logs, week)).toMatchObject({ done: 3, target: 3, complete: true })
   })
   it('ticks gym at 3/3', () => {
-    expect(getProgress(gym, logs, week)).toEqual({ done: 3, target: 3, complete: true })
+    expect(getProgress(gym, logs, week)).toMatchObject({ done: 3, target: 3, complete: true })
   })
   it('is incomplete with 2/3', () => {
     expect(getProgress(kickboxing, logs.slice(0, 3), week).complete).toBe(false)
   })
   it('shows 0 with no logs', () => {
-    expect(getProgress(gym, [], week)).toEqual({ done: 0, target: 3, complete: false })
+    expect(getProgress(gym, [], week)).toMatchObject({ done: 0, target: 3, complete: false })
   })
   it("ignores last week's and next week's logs", () => {
     const outside = [log('kb', '2026-10-04'), log('kb', '2026-10-12')]
@@ -66,6 +66,14 @@ describe('getProgress: the kickboxing and gym week', () => {
   it('counts two logs on one day as two sessions', () => {
     const twice = [log('gym', '2026-10-06'), { ...log('gym', '2026-10-06'), id: 'second' }]
     expect(getProgress(gym, twice, week).done).toBe(2)
+  })
+  it('counts every session type towards the parent goal', () => {
+    const typed = [
+      { ...log('gym', '2026-10-05'), sessionType: 'Upper' },
+      { ...log('gym', '2026-10-08'), sessionType: 'Lower' },
+      { ...log('gym', '2026-10-11'), sessionType: 'Upper' },
+    ]
+    expect(getProgress(gym, typed, week)).toMatchObject({ done: 3, complete: true })
   })
 })
 
