@@ -188,17 +188,21 @@ export function SlotSheet({ data, selected, actions, onClose }: { data: AppData;
         Start time (optional)
       </label>
       <input className="input" id="s-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      <label className="f" htmlFor="s-duration">
-        Length, in minutes (optional)
-      </label>
-      <MinutesInput id="s-duration" value={duration} onChange={setDuration} placeholder="e.g. 60" />
-      <p className="hint">Ticking this session logs this many minutes towards the goal's time target.</p>
+      {goal?.targetMinutesPerWeek !== undefined ? (
+        <>
+          <label className="f" htmlFor="s-duration">
+            Length, in minutes
+          </label>
+          <MinutesInput id="s-duration" value={duration} onChange={setDuration} placeholder="e.g. 60" />
+          <p className="hint">Ticking this session logs these minutes towards the goal&apos;s time target.</p>
+        </>
+      ) : null}
       <div className="sheet-actions">
         <button
           className="btn block"
           disabled={!goalId}
           onClick={() => {
-            actions.addSession({ goalId, dayOfWeek: day, time, durationMinutes: parseMinutes(duration), sessionType: sessionType || undefined })
+            actions.addSession({ goalId, dayOfWeek: day, time, durationMinutes: goal?.targetMinutesPerWeek !== undefined ? parseMinutes(duration) : undefined, sessionType: sessionType || undefined })
             onClose()
           }}
         >
@@ -221,14 +225,18 @@ export function LogSheet({ data, selected, actions, onClose }: { data: AppData; 
   return (
     <Sheet onClose={onClose}>
       <h2>Log for {DAY_NAMES[weekdayIndex(selected)]}</h2>
-      <label className="f" htmlFor="l-minutes">
-        How long, in minutes (optional)
-      </label>
-      <MinutesInput id="l-minutes" value={minutes} onChange={setMinutes} placeholder="e.g. 60" />
       <label className="f" htmlFor="l-goal">Goal</label>
       <select className="input" id="l-goal" value={goalId} onChange={(e) => { setGoalId(e.target.value); setSessionType('') }}>
         {data.goals.map((g) => <option key={g.id} value={g.id}>{g.emoji} {g.name}</option>)}
       </select>
+      {goal?.targetMinutesPerWeek !== undefined ? (
+        <>
+          <label className="f" htmlFor="l-minutes">
+            How long, in minutes
+          </label>
+          <MinutesInput id="l-minutes" value={minutes} onChange={setMinutes} placeholder="e.g. 60" />
+        </>
+      ) : null}
       {goal?.sessionTypes?.length ? (
         <>
           <label className="f" htmlFor="l-type">Session type</label>
@@ -239,7 +247,7 @@ export function LogSheet({ data, selected, actions, onClose }: { data: AppData; 
         </>
       ) : null}
       <div className="sheet-actions">
-        <button className="btn block" disabled={!goalId} onClick={() => { actions.addLog(goalId, selected, parseMinutes(minutes), sessionType || undefined); onClose() }}>
+        <button className="btn block" disabled={!goalId} onClick={() => { actions.addLog(goalId, selected, goal?.targetMinutesPerWeek !== undefined ? parseMinutes(minutes) : undefined, sessionType || undefined); onClose() }}>
           Log session
         </button>
         <button className="btn ghost block" onClick={onClose}>
