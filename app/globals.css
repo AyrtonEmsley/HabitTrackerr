@@ -51,6 +51,11 @@ h1,h2,h3{margin:0;font-weight:800;letter-spacing:-0.02em}
 .seg{flex:1;height:12px;border-radius:6px;background:var(--line)}
 .seg.on{background:var(--accent)}
 .goal.complete .seg.on{background:var(--done)}
+.completed-types{display:flex;align-items:center;flex-wrap:wrap;gap:3px 7px;margin-top:8px;color:var(--muted);font-size:12px;font-weight:600;line-height:1.3}
+.completed-types span{display:inline-flex;align-items:center;gap:7px}
+.completed-types span:not(:last-child)::after{content:"\00b7";color:var(--line);font-weight:800}
+.goal.complete .completed-types{color:var(--done)}
+.goal.complete .completed-types span:not(:last-child)::after{color:var(--done);opacity:.45}
 .bonus{font-size:13px;color:var(--done);font-weight:600;margin-top:6px}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.035)}100%{transform:scale(1)}}
 @keyframes fillseg{from{transform:scaleY(.4);opacity:.4}to{transform:none;opacity:1}}

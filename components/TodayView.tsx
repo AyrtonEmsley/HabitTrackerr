@@ -108,6 +108,9 @@ export default function TodayView({ data, selected, onSelect, actions, onAddGoal
       <div className="goals">
         {data.goals.map((g) => {
           const p = getProgress(g, data.logs, week)
+          const completedSessionTypes = data.logs
+            .filter((log) => log.goalId === g.id && log.date >= week.start && log.date <= week.end && log.sessionType)
+            .map((log) => log.sessionType as string)
           const isTimeOnly = g.targetPerWeek === 0 && p.minutesTarget !== undefined
           const minutesLeft = Math.max(0, (p.minutesTarget ?? 0) - p.minutesDone)
           const filledTimeSegments = Math.min(10, Math.floor((p.minutesDone / (p.minutesTarget ?? 1)) * 10))
@@ -134,6 +137,13 @@ export default function TodayView({ data, selected, onSelect, actions, onAddGoal
                   <div key={i} className={`seg ${i < (isTimeOnly ? filledTimeSegments : p.done) ? 'on' : ''}`} />
                 ))}
               </div>
+              {completedSessionTypes.length > 0 && (
+                <div className="completed-types" aria-label={`Completed: ${completedSessionTypes.join(', ')}`}>
+                  {completedSessionTypes.map((type, index) => (
+                    <span key={`${type}-${index}`}>{type}</span>
+                  ))}
+                </div>
+              )}
               {isTimeOnly ? (
                 p.minutesDone > (p.minutesTarget ?? 0) && (
                   <div className="bonus">+{fmtMinutes(p.minutesDone - (p.minutesTarget ?? 0))} extra this week</div>
