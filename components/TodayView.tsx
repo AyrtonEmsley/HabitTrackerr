@@ -56,7 +56,6 @@ function WeekNote({
         id="week-note"
         rows={3}
         value={text}
-        placeholder="Notes for this week"
         onChange={(e) => {
           const next = e.target.value
           setText(next)
