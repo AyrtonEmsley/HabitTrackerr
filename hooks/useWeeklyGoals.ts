@@ -38,10 +38,38 @@ export function useWeeklyGoals() {
 
   const deleteGoal = useCallback((id: string) => {
     setData((d) => ({
+      ...d,
       goals: d.goals.filter((g) => g.id !== id),
       sessions: d.sessions.filter((s) => s.goalId !== id),
       logs: d.logs.filter((l) => l.goalId !== id),
     }))
+  }, [])
+
+  const saveWeekNote = useCallback((weekStart: string, text: string) => {
+    const trimmed = text.trim()
+    setData((d) => {
+      const current = d.weekNotes[weekStart]
+      if (trimmed) {
+        if (current === trimmed) return d
+        return { ...d, weekNotes: { ...d.weekNotes, [weekStart]: trimmed } }
+      }
+      if (current === undefined) return d
+      const weekNotes = { ...d.weekNotes }
+      delete weekNotes[weekStart]
+      return { ...d, weekNotes }
+    })
+  }, [])
+
+  const moveGoal = useCallback((id: string, direction: -1 | 1) => {
+    setData((d) => {
+      const i = d.goals.findIndex((g) => g.id === id)
+      const j = i + direction
+      if (i < 0 || j < 0 || j >= d.goals.length) return d
+      const goals = d.goals.slice()
+      const [item] = goals.splice(i, 1)
+      goals.splice(j, 0, item)
+      return { ...d, goals }
+    })
   }, [])
 
   const addSession = useCallback((input: { goalId: string; dayOfWeek: DayIndex; time?: string; durationMinutes?: number; sessionType?: string }) => {
@@ -99,6 +127,7 @@ export function useWeeklyGoals() {
     setData({
       goals: [kb, gym],
       sessions,
+      weekNotes: {},
       logs: [
         { id: uid(), goalId: kb.id, date: day(0), plannedSessionId: sessions[0].id, minutes: 60 },
         { id: uid(), goalId: gym.id, date: day(1), minutes: 60 },
@@ -113,8 +142,8 @@ export function useWeeklyGoals() {
   const resetAll = useCallback(() => setData(emptyData()), [])
 
   const actions = useMemo(
-    () => ({ saveGoal, deleteGoal, addSession, deleteSession, toggleSession, addLog, removeLog, loadExample, resetAll }),
-    [saveGoal, deleteGoal, addSession, deleteSession, toggleSession, addLog, removeLog, loadExample, resetAll],
+    () => ({ saveGoal, deleteGoal, moveGoal, saveWeekNote, addSession, deleteSession, toggleSession, addLog, removeLog, loadExample, resetAll }),
+    [saveGoal, deleteGoal, moveGoal, saveWeekNote, addSession, deleteSession, toggleSession, addLog, removeLog, loadExample, resetAll],
   )
 
   return { data, ready, actions }

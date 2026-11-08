@@ -20,6 +20,55 @@ import {
 } from '@/lib/week'
 import { CheckIcon, CloseIcon, PlusIcon } from './icons'
 
+function WeekNote({
+  weekStart,
+  initial,
+  onSave,
+}: {
+  weekStart: string
+  initial: string
+  onSave: (weekStart: string, text: string) => void
+}) {
+  const [text, setText] = useState(initial)
+  const textRef = useRef(text)
+  textRef.current = text
+  const timer = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timer.current !== null) window.clearTimeout(timer.current)
+      onSave(weekStart, textRef.current)
+    }
+  }, [weekStart, onSave])
+
+  const persist = (next: string) => {
+    if (timer.current !== null) window.clearTimeout(timer.current)
+    onSave(weekStart, next)
+  }
+
+  return (
+    <div className="week-notes">
+      <label className="f" htmlFor="week-note">
+        Notes
+      </label>
+      <textarea
+        className="input notes-box"
+        id="week-note"
+        rows={3}
+        value={text}
+        placeholder="Notes for this week"
+        onChange={(e) => {
+          const next = e.target.value
+          setText(next)
+          if (timer.current !== null) window.clearTimeout(timer.current)
+          timer.current = window.setTimeout(() => onSave(weekStart, next), 400)
+        }}
+        onBlur={() => persist(text)}
+      />
+    </div>
+  )
+}
+
 type Props = {
   data: AppData
   selected: string
@@ -108,9 +157,6 @@ export default function TodayView({ data, selected, onSelect, actions, onAddGoal
       <div className="goals">
         {data.goals.map((g) => {
           const p = getProgress(g, data.logs, week)
-          const completedSessionTypes = data.logs
-            .filter((log) => log.goalId === g.id && log.date >= week.start && log.date <= week.end && log.sessionType)
-            .map((log) => log.sessionType as string)
           const isTimeOnly = g.targetPerWeek === 0 && p.minutesTarget !== undefined
           const minutesLeft = Math.max(0, (p.minutesTarget ?? 0) - p.minutesDone)
           const filledTimeSegments = Math.min(10, Math.floor((p.minutesDone / (p.minutesTarget ?? 1)) * 10))
@@ -119,13 +165,8 @@ export default function TodayView({ data, selected, onSelect, actions, onAddGoal
               <div className="goal-head">
                 <div className="goal-emoji">{g.emoji ?? '🎯'}</div>
                 <div className="goal-name">{g.name}</div>
-                {p.complete && (
-                  <div className="tick" aria-label="Goal complete">
-                    <CheckIcon />
-                  </div>
-                )}
                 <div className="goal-count">
-                  {isTimeOnly ? `${fmtMinutes(minutesLeft)} left` : `${Math.min(p.done, p.target)}/${p.target}`}
+                  {isTimeOnly ? `${fmtMinutes(minutesLeft)} left` : `${p.done}/${p.target}`}
                 </div>
               </div>
               <div
@@ -137,24 +178,12 @@ export default function TodayView({ data, selected, onSelect, actions, onAddGoal
                   <div key={i} className={`seg ${i < (isTimeOnly ? filledTimeSegments : p.done) ? 'on' : ''}`} />
                 ))}
               </div>
-              {completedSessionTypes.length > 0 && (
-                <div className="completed-types" aria-label={`Completed: ${completedSessionTypes.join(', ')}`}>
-                  {completedSessionTypes.map((type, index) => (
-                    <span key={`${type}-${index}`}>{type}</span>
-                  ))}
-                </div>
-              )}
-              {isTimeOnly ? (
-                p.minutesDone > (p.minutesTarget ?? 0) && (
-                  <div className="bonus">+{fmtMinutes(p.minutesDone - (p.minutesTarget ?? 0))} extra this week</div>
-                )
-              ) : (
-                p.done > p.target && <div className="bonus">+{p.done - p.target} extra this week</div>
-              )}
             </div>
           )
         })}
       </div>
+
+      <WeekNote key={week.start} weekStart={week.start} initial={data.weekNotes[week.start] ?? ''} onSave={actions.saveWeekNote} />
 
       <div className="strip">
         {getWeekDates(selected).map((d, i) => {

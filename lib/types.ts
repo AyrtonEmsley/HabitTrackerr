@@ -38,6 +38,8 @@ export type AppData = {
   goals: Goal[]
   sessions: PlannedSession[]
   logs: Log[]
+  /** Free-text notes keyed by week start (Monday, YYYY-MM-DD). */
+  weekNotes: Record<string, string>
 }
 
 export type WeekRange = { start: string; end: string }
